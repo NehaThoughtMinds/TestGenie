@@ -1,68 +1,89 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer base {
+    :root {
+        --bg: #0a0c10;
+        --surface: #111318;
+        --surface2: #181c24;
+        --border: #1f2535;
+        --border-bright: #2e3a52;
+        --accent: #00e5ff;
+        --accent2: #7c3aed;
+        --accent3: #10b981;
+        --warn: #f59e0b;
+        --text: #e2e8f0;
+        --text-dim: #64748b;
+        --text-faint: #334155;
+        --glow: rgba(0, 229, 255, 0.12);
+        --glow2: rgba(124, 58, 237, 0.12);
+        --radius: 12px;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply bg-bg text-text min-h-screen overflow-x-hidden font-sans;
+    }
+
+    /* Background Grid */
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+        background-size: 48px 48px;
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    /* Custom Scrollbar needed for clean look */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        @apply bg-surface;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        @apply bg-border-bright rounded-full;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        @apply bg-text-dim;
+    }
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+@layer components {
+    .orb {
+        @apply fixed rounded-full blur-[100px] pointer-events-none z-0 animate-float;
+    }
+
+    .nav-pill {
+        @apply px-[14px] py-[6px] rounded-[6px] text-[13px] font-medium text-text-dim cursor-pointer transition-all duration-200 border-none bg-transparent font-sans hover:bg-surface2 hover:text-text;
+    }
+
+    .nav-pill.active {
+        @apply text-accent;
+    }
+
+    .btn-primary {
+        @apply w-full p-4 bg-gradient-to-br from-accent to-[#0095a8] border-none rounded-xl text-bg font-sans text-base font-extrabold tracking-wide cursor-pointer flex items-center justify-center gap-2.5 transition-all duration-200 relative overflow-hidden hover:-translate-y-0.5 hover:shadow-glow active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none;
+    }
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+@layer utilities {
+    .clip-text {
+        -webkit-text-fill-color: transparent;
+        @apply bg-clip-text;
+    }
 }

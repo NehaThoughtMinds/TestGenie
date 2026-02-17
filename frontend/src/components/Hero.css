@@ -1,0 +1,86 @@
+/* Hero */
+.hero {
+    padding: 80px 0 60px;
+    text-align: center;
+}
+
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: rgba(0, 229, 255, 0.08);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 28px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    animation: fadeUp 0.5s ease both;
+}
+
+.hero-badge::before {
+    content: '●';
+    font-size: 8px;
+    animation: pulse 2s infinite;
+}
+
+.hero h1 {
+    font-size: clamp(42px, 6vw, 76px);
+    font-weight: 800;
+    line-height: 1.05;
+    animation: fadeUp 0.5s 0.1s ease both;
+}
+
+.hero h1 .line1 {
+    display: block;
+    color: var(--text);
+}
+
+.hero h1 .line2 {
+    display: block;
+    color: var(--accent);
+}
+
+.hero h1 .line3 {
+    display: block;
+    color: var(--text-dim);
+}
+
+.hero-sub {
+    font-size: 17px;
+    color: var(--text-dim);
+    margin-top: 20px;
+    max-width: 580px;
+    margin-inline: auto;
+    line-height: 1.7;
+    animation: fadeUp 0.5s 0.2s ease both;
+}
+
+.hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 44px;
+    animation: fadeUp 0.5s 0.3s ease both;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-num {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
