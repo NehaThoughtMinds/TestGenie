@@ -1,72 +1,13 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TestGenie — Unit Test Generator</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <style>
-      body { font-family: Arial, sans-serif; margin: 24px; }
-      textarea { width: 100%; height: 300px; font-family: monospace; }
-      pre { background: #f6f8fa; padding: 12px; overflow:auto }
-      button { margin-top: 8px; }
-    </style>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>frontend</title>
   </head>
   <body>
     <div id="root"></div>
-
-    <script type="text/babel">
-      const { useState } = React;
-
-      function App(){
-        const [source, setSource] = useState(`# Example\ndef add(a, b):\n    return a + b\n`);
-        const [result, setResult] = useState(null);
-        const [loading, setLoading] = useState(false);
-
-        async function generate(){
-          setLoading(true);
-          setResult(null);
-          try{
-            const resp = await fetch('http://localhost:8000/generate', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ source })
-            });
-            const data = await resp.json();
-            setResult(data);
-          }catch(e){
-            setResult({ error: e.message });
-          }finally{ setLoading(false); }
-        }
-
-        return (
-          <div>
-            <h1>TestGenie — Unit Test Generator</h1>
-            <p>Paste your Python module source and click <strong>Generate</strong>.</p>
-            <textarea value={source} onChange={e=>setSource(e.target.value)} />
-            <div>
-              <button onClick={generate} disabled={loading}>{loading ? 'Generating…' : 'Generate'}</button>
-            </div>
-
-            {result && (
-              <div style={{marginTop:16}}>
-                {result.error ? (
-                  <pre style={{color:'crimson'}}>{JSON.stringify(result, null, 2)}</pre>
-                ) : (
-                  <div>
-                    <h3>Generated file: {result.filename}</h3>
-                    <pre>{result.content}</pre>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )
-      }
-
-      ReactDOM.createRoot(document.getElementById('root')).render(<App />)
-    </script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
