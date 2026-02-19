@@ -31,58 +31,85 @@ IMPORTANT:
 - Return ONLY valid JSON. No markdown, no explanation."""
 
 
-def detect_language(source_code: str, provided_language: str) -> str:
-    """Detect language from source code patterns if needed."""
-    language = provided_language.lower()
+def detect_language(source_code: str, filename: str = "") -> str:
+    """Detect language from file extension first, then code patterns."""
+    # Check file extension first (most reliable)
+    if filename:
+        filename_lower = filename.lower()
+        if filename_lower.endswith(('.tsx', '.ts')):
+            return "typescript"
+        elif filename_lower.endswith(('.jsx', '.js')):
+            return "javascript"
+        elif filename_lower.endswith('.py'):
+            return "python"
+        elif filename_lower.endswith('.java'):
+            return "java"
+        elif filename_lower.endswith(('.cs', '.csharp')):
+            return "csharp"
+        elif filename_lower.endswith('.go'):
+            return "go"
     
-    # If already provided, return it
-    if language in LANGUAGE_TOOL_MAP:
-        return language
-    
-    # Detect from code patterns
+    # Detect from code patterns if extension didn't help
     code_lower = source_code.lower()
     
-    if "def " in code_lower or "import " in code_lower or ":" in code_lower:
-        return "python"
-    elif "public " in code_lower and "class " in code_lower:
-        return "java"
-    elif "function " in code_lower or "const " in code_lower or "let " in code_lower:
+    # TypeScript/JavaScript detection (check before Python)
+    if "=>" in source_code or "async " in code_lower or "await " in code_lower:
+        # If has interface/type keywords, likely TypeScript
+        if "interface " in code_lower or ("type " in code_lower and "{" in source_code):
+            return "typescript"
         return "javascript"
-    elif "interface " in code_lower and "type " in code_lower:
-        return "typescript"
-    elif "public " in code_lower and "void " in code_lower:
+    elif "function " in code_lower or "const " in code_lower or "let " in code_lower or "var " in code_lower:
+        return "javascript"
+    
+    # Python detection
+    if "def " in code_lower or "class " in code_lower or "__name__" in code_lower:
+        return "python"
+    
+    # Java detection
+    if "public " in code_lower and "class " in code_lower:
+        return "java"
+    
+    # C# detection
+    if "public " in code_lower and "void " in code_lower:
         return "csharp"
-    elif "func " in code_lower and "package " in code_lower:
+    
+    # Go detection
+    if "func " in code_lower and "package " in code_lower:
         return "go"
     
     return "python"  # Default
 
 
-async def generate_test_cases(req: GenerateTestRequest) -> GenerateTestResponse:
+async def generate_test_cases(req: GenerateTestRequest, filename: str = "") -> GenerateTestResponse:
     start = time.time()
     
-    # Detect language
-    detected_language = detect_language(req.source_code, req.language)
+    # Detect language from source code and filename
+    detected_language = detect_language(req.source_code, filename)
     tool_config = LANGUAGE_TOOL_MAP.get(detected_language, LANGUAGE_TOOL_MAP["python"])
 
     user_prompt = f"""
-Language: {detected_language}
-Framework: {req.framework or tool_config['framework']}
-Coverage Tool: {tool_config['tool']}
+Analyze the source code below and generate {req.max_tests} diverse test cases.
+
+IMPORTANT: Based on the programming language detected in the code:
+- For Python: use pytest framework
+- For Java: use JUnit framework
+- For JavaScript/TypeScript: use Jest framework
+- For C#: use NUnit framework
+- For Go: use testing package
+
 Coverage Depth: {req.coverage_depth}
-Max tests: {req.max_tests}
 
 Source code:
-```{detected_language}
+```
 {req.source_code}
 ```
 
-Generate {req.max_tests} diverse test cases as a JSON array.
+Generate test cases as a JSON array.
 Make sure each test case includes:
 - Clear description of what is being tested
 - Specific input values to test
 - Expected output/result for those inputs
-- Runnable test code using the {tool_config['framework']} framework
+- Runnable test code using the appropriate framework for {detected_language}
 """
 
     response = client.chat.completions.create(
@@ -103,7 +130,7 @@ Make sure each test case includes:
     return GenerateTestResponse(
         success=True,
         file_name=None,
-        language=req.language,
+        language=detected_language,
         detected_language=detected_language,
         recommended_framework=tool_config['framework'],
         recommended_tool=tool_config['tool'],

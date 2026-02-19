@@ -36,27 +36,16 @@ async def generate(
 )
 async def generate_from_file(
     file: UploadFile = File(...),
-    framework: str = None,
     coverage_depth: str = "standard",
     # _: str = Depends(verify_api_key)
 ):
     content = await file.read()
     source_code = content.decode("utf-8")
 
-    ext_to_lang = {
-        ".py": "python", ".js": "javascript",
-        ".ts": "typescript", ".java": "java",
-        ".cs": "csharp", ".go": "go"
-    }
-    suffix = "." + file.filename.rsplit(".", 1)[-1]
-    language = ext_to_lang.get(suffix, "python")
-
     req = GenerateTestRequest(
         source_code=source_code,
-        language=language,
-        framework=framework,
         coverage_depth=coverage_depth,
     )
-    result = await generate_test_cases(req)
+    result = await generate_test_cases(req, filename=file.filename)
     result.file_name = file.filename
     return result
