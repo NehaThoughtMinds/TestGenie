@@ -1,0 +1,59 @@
+/* Upload Section */
+.upload-section {
+    padding: 20px 0 60px;
+}
+
+.upload-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    animation: fadeUp 0.5s 0.4s ease both;
+}
+
+.upload-card-header {
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.upload-card-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.upload-card-title h2 {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.step-badge {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--bg);
+}
+
+.upload-body {
+    padding: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+@media(max-width:768px) {
+    .upload-body {
+        grid-template-columns: 1fr;
+    }
+}
