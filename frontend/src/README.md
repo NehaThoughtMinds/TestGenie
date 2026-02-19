@@ -21,8 +21,7 @@ src/
 │   ├── Hero.css
 │   ├── Hero.jsx
 │   ├── LanguageSelector.jsx
-│   ├── Navbar.css
-│   ├── Navbar.jsx
+│   ├── Navbar.tsx
 │   ├── ProcessingOverlay.jsx
 │   ├── ResultsSection.css
 │   ├── ResultsSection.jsx
