@@ -2,18 +2,17 @@ import React from 'react';
 import { useApi } from '../hooks/useApi';
 import { useToast, useFileUpload, useDragDrop, useExpandedCards, useScrollTo } from '../hooks/useUI';
 import { formatSize, copyToClipboard, getCategoryColor, getPriorityColor } from '../utils';
-import { LANGUAGES, FILE_EXTENSIONS, COVERAGE_DEPTH_OPTIONS, MAX_TESTS_OPTIONS, TEST_FRAMEWORK_OPTIONS, PLACEHOLDER_CODE } from '../constants';
+import { FILE_EXTENSIONS, COVERAGE_DEPTH_OPTIONS, MAX_TESTS_OPTIONS, TEST_FRAMEWORK_OPTIONS, PLACEHOLDER_CODE } from '../constants';
 import type { TestCase, TestStats } from '../types';
 
 // Icons
-const IconUpload = () => <span className="text-5xl mb-4 block filter grayscale-[0.5] transition-transform duration-300 group-hover:-translate-y-1 group-hover:scale-110">📁</span>;
-const IconFile = () => <span className="text-3xl">📄</span>;
-const IconClear = () => <span className="text-xl">⊘</span>;
+const IconUpload = () => <span className="text-6xl mb-4 block filter grayscale-[0.5] transition-transform duration-300 group-hover:-translate-y-1 group-hover:scale-110">📁</span>;
+const IconFile = () => <span className="text-4xl">📄</span>;
+const IconClear = () => <span className="text-2xl">⊘</span>;
 const IconRemove = () => <span>✕</span>;
-const IconLightning = () => <span className="text-xl">⚡</span>;
+const IconLightning = () => <span className="text-2xl">⚡</span>;
 
 export default function TestGenie() {
-  const [activeLang, setActiveLang] = React.useState('Python');
   const [coverageDepth, setCoverageDepth] = React.useState<'minimal' | 'standard' | 'deep' | 'security'>('standard');
   const [maxTests, setMaxTests] = React.useState(10);
   const [showResults, setShowResults] = React.useState(false);
@@ -93,14 +92,14 @@ export default function TestGenie() {
         <div className="max-w-[1280px] mx-auto px-6 h-16 flex items-center justify-between">
           <a href="#" className="flex items-center gap-2.5 no-underline">
             <div className="w-9 h-9 bg-gradient-to-br from-accent to-accent2 rounded-lg flex items-center justify-center text-lg">⚙</div>
-            <span className="text-xl font-extrabold text-text">Test<span className="text-accent">Genie</span></span>
+            <span className="text-2xl font-extrabold text-text">Test<span className="text-accent">Genie</span></span>
           </a>
           <div className="flex gap-1">
             {['Generator', 'History', 'Templates', 'Docs'].map(item => (
               <button key={item} className={`nav-pill ${item === 'Generator' ? 'active' : ''}`}>{item}</button>
             ))}
           </div>
-          <button className="px-[18px] py-2 bg-accent text-bg border-none rounded-lg text-[13px] font-bold cursor-pointer font-sans tracking-[0.3px] transition-all duration-200 hover:bg-[#33eaff] hover:-translate-y-[1px]">
+          <button className="px-[18px] py-2 bg-accent text-bg border-none rounded-lg text-[15px] font-bold cursor-pointer font-sans tracking-[0.3px] transition-all duration-200 hover:bg-[#33eaff] hover:-translate-y-[1px]">
             → API Access
           </button>
         </div>
@@ -112,12 +111,12 @@ export default function TestGenie() {
           <div className="inline-flex items-center gap-2 px-[14px] py-[6px] bg-[rgba(0,229,255,0.08)] border border-[rgba(0,229,255,0.2)] rounded-full text-xs font-semibold text-accent mb-7 tracking-[1px] uppercase animate-fadeUp">
             <span className="text-[8px] animate-pulse">●</span> AI-Powered Testing Intelligence
           </div>
-          <h1 className="text-[clamp(42px,6vw,76px)] font-extrabold leading-[1.05] animate-fadeUp [animation-delay:0.1s]">
+          <h1 className="text-[clamp(48px,6vw,84px)] font-extrabold leading-[1.05] animate-fadeUp [animation-delay:0.1s]">
             <span className="block text-text">Generate Unit Tests</span>
             <span className="block text-accent">From Source Code.</span>
             <span className="block text-text-dim">Instantly.</span>
           </h1>
-          <p className="text-[17px] text-text-dim mt-5 max-w-[580px] mx-auto leading-[1.7] animate-fadeUp [animation-delay:0.2s]">
+          <p className="text-[19px] text-text-dim mt-5 max-w-[580px] mx-auto leading-[1.7] animate-fadeUp [animation-delay:0.2s]">
             Upload your source file and our AI analyzes every function, edge case, and boundary condition to produce comprehensive, human-readable test suites.
           </p>
           <div className="flex justify-center gap-10 mt-11 animate-fadeUp [animation-delay:0.3s]">
@@ -128,8 +127,8 @@ export default function TestGenie() {
               { num: '500K+', label: 'Tests Generated' }
             ].map((stat, i) => (
               <div key={i} className="text-center">
-                <div className="text-[28px] font-extrabold text-accent">{stat.num}</div>
-                <div className="text-xs text-text-dim mt-0.5 uppercase tracking-[0.5px]">{stat.label}</div>
+                <div className="text-[32px] font-extrabold text-accent">{stat.num}</div>
+                <div className="text-[13px] text-text-dim mt-0.5 uppercase tracking-[0.5px]">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -146,21 +145,6 @@ export default function TestGenie() {
               <div className="flex items-center gap-3">
                 <div className="w-7 h-7 bg-gradient-to-br from-accent to-accent2 rounded-full flex items-center justify-center text-xs font-extrabold text-bg">1</div>
                 <h2 className="text-lg font-bold">Upload Source File</h2>
-              </div>
-              <div className="flex gap-1.5 flex-wrap">
-                {LANGUAGES.map(lang => (
-                  <span
-                    key={lang}
-                    onClick={() => setActiveLang(lang)}
-                    className={`px-3 py-1 rounded-full text-[11px] font-mono font-medium border cursor-pointer transition-all duration-200 
-                      ${activeLang === lang
-                        ? 'bg-[rgba(0,229,255,0.1)] border-[rgba(0,229,255,0.3)] text-accent'
-                        : 'bg-surface2 border-border text-text-dim hover:bg-[rgba(0,229,255,0.1)] hover:border-[rgba(0,229,255,0.3)] hover:text-accent'
-                      }`}
-                  >
-                    {lang}
-                  </span>
-                ))}
               </div>
             </div>
 
@@ -286,7 +270,7 @@ export default function TestGenie() {
                 onClick={handleGenerate}
                 disabled={isProcessing}
               >
-                {!isProcessing ? (
+                {isProcessing ? (
                   <>
                     <div className="w-5 h-5 border-2 border-[rgba(10,12,16,0.3)] border-t-bg rounded-full animate-spin" />
                     Generating...
@@ -341,10 +325,6 @@ export default function TestGenie() {
                   <span className="text-[10px] font-semibold text-text-dim uppercase tracking-wider">Tool:</span>
                   <span className="px-2 py-1 rounded bg-[rgba(245,158,11,0.1)] text-warn text-[11px] font-mono font-semibold">{apiResponse.recommended_tool}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-semibold text-text-dim uppercase tracking-wider">Model:</span>
-                  <span className="px-2 py-1 rounded bg-[rgba(124,58,237,0.1)] text-[#a78bfa] text-[11px] font-mono font-semibold">{apiResponse.model_used}</span>
-                </div>
                 <div className="flex items-center gap-2 ml-auto">
                   <span className="text-[10px] font-semibold text-text-dim uppercase tracking-wider">Time:</span>
                   <span className="text-[11px] font-mono text-text-dim">{apiResponse.generation_time_ms}ms</span>
@@ -368,7 +348,7 @@ export default function TestGenie() {
                         {tc.id}
                       </div>
                       <div className="flex-1">
-                        <div className="text-[15px] font-bold leading-tight">{tc.name}</div>
+                        <div className="text-[18px] font-bold leading-tight">{tc.name}</div>
                         <div className="text-xs text-text-dim mt-1 font-mono">fn: {tc.function_name} &nbsp;·&nbsp; {tc.category.replace('_', ' ')}</div>
                       </div>
                       <div className="flex gap-1.5 flex-wrap ml-auto">
@@ -386,7 +366,7 @@ export default function TestGenie() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="md:col-span-2">
                             <label className="text-[10px] font-bold uppercase tracking-wider text-text-dim mb-2 block">Description</label>
-                            <div className="bg-surface2 border border-border rounded-lg p-3 text-[13px] leading-relaxed text-text">{tc.description}</div>
+                            <div className="bg-surface2 border border-border rounded-lg p-3 text-[16px] leading-relaxed text-text">{tc.description}</div>
                           </div>
                           <div>
                             <label className="text-[10px] font-bold uppercase tracking-wider text-text-dim mb-2 block">Input</label>
