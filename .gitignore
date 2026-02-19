@@ -1,0 +1,7 @@
+testgenie/node_modules/
+testgenie/dist/
+testgenie/out/
+backend/venv/
+backend/__pycache__/
+*.pyc
+.env
