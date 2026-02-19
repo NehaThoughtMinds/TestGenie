@@ -1,9 +1,8 @@
-import TestForge from './TestForge'
+import TestGenie from './pages/TestGenie';
+import './App.css';
 
 function App() {
-  return (
-    <TestForge />
-  )
+  return <TestGenie />;
 }
 
-export default App
+export default App;
