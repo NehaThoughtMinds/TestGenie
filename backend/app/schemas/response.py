@@ -32,31 +32,71 @@ class TestCase(BaseModel):
     @classmethod
     def coerce_to_str(cls, v: Any) -> str:
         if isinstance(v, list):
-            return ", ".join(str(i) for i in v)  # [5, 3] → "5, 3"
-        return str(v)                             # 1 → "1", 8 → "8"
+            return ", ".join(str(i) for i in v)
+        return str(v)
 
     @field_validator("category", mode="before")
     @classmethod
     def fix_category(cls, v: Any) -> str:
+        if v is None:
+            return "happy_path"
+        raw = str(v).strip().lower()
+        if raw in {c.value for c in TestCategory}:
+            return raw
         mapping = {
-            "unit": "happy_path",
-            "integration": "happy_path",
+            "happy": "happy_path",
             "positive": "happy_path",
+            "success": "happy_path",
+            "normal": "happy_path",
+            "edge": "edge_case",
+            "edgecase": "edge_case",
+            "edge_case": "edge_case",
+            "corner": "edge_case",
+            "corner_case": "edge_case",
+            "negative": "negative",
             "error": "negative",
             "exception": "negative",
-            "math": "edge_case",
-            "arithmetic": "edge_case",
-            "string": "edge_case",
+            "failure": "negative",
             "boundary": "boundary",
+            "boundaries": "boundary",
+            "limit": "boundary",
+            "limits": "boundary",
             "boundary_check": "boundary",
         }
-        return mapping.get(str(v).lower(), "happy_path")  # Default to happy_path for unknown categories
+        return mapping.get(raw, "happy_path")
 
     @field_validator("priority", mode="before")
     @classmethod
     def fix_priority(cls, v: Any) -> str:
         return str(v).lower() if v else "medium"
 
+
+# ── Coverage Models ────────────────────────────────────────────────
+
+class FileCoverage(BaseModel):
+    """Per-file coverage breakdown."""
+    file: str
+    line_coverage_pct: float
+    branch_coverage_pct: Optional[float] = None
+    lines_covered: int
+    lines_total: int
+    missing_lines: List[int] = []
+
+
+class CoverageReport(BaseModel):
+    """
+    Coverage report returned alongside test cases.
+    - For Python: populated with real numbers from coverage.py
+    - For all other languages: execution_possible=False,
+      commands and config_files are ready-to-paste instructions.
+    """
+    # Real numbers (Python only)
+    overall_line_coverage_pct: Optional[float] = None
+    overall_branch_coverage_pct: Optional[float] = None
+    files: List[FileCoverage] = []
+
+
+# ── Main Response ──────────────────────────────────────────────────
 
 class GenerateTestResponse(BaseModel):
     success: bool
@@ -67,6 +107,7 @@ class GenerateTestResponse(BaseModel):
     recommended_tool: str
     total_tests: int
     test_cases: List[TestCase]
+    coverage_report: Optional[CoverageReport] = None
     generation_time_ms: int
     model_used: str
 
