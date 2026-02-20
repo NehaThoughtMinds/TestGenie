@@ -5,20 +5,20 @@ export default function Docs() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen text-text font-sans">
+    <div className="h-screen text-text font-sans overflow-hidden">
       <Navbar />
       
-      <main className="max-w-[1280px] mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-text mb-4">Documentation</h1>
-          <p className="text-text-dim text-lg">Learn how to use TestGenie effectively</p>
+      <main className="h-[calc(100vh-4rem)] max-w-[1280px] mx-auto px-6 py-6 overflow-y-auto">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-text mb-2">Documentation</h1>
+          <p className="text-text-dim">Learn how to use TestGenie effectively</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="space-y-6">
-            <div className="bg-bg-secondary rounded-xl border border-border p-6">
-              <h2 className="text-2xl font-semibold text-text mb-4">Getting Started</h2>
-              <ul className="space-y-3 text-text-dim">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div className="bg-surface border border-border rounded-xl p-4">
+              <h2 className="text-xl font-semibold text-text mb-3">Getting Started</h2>
+              <ul className="space-y-2 text-text-dim text-sm">
                 <li className="flex items-start gap-3">
                   <span className="text-accent">▸</span>
                   <span>Upload your source code file</span>
@@ -38,9 +38,9 @@ export default function Docs() {
               </ul>
             </div>
 
-            <div className="bg-bg-secondary rounded-xl border border-border p-6">
-              <h2 className="text-2xl font-semibold text-text mb-4">Supported Languages</h2>
-              <div className="grid grid-cols-2 gap-3">
+            <div className="bg-surface border border-border rounded-xl p-4">
+              <h2 className="text-xl font-semibold text-text mb-3">Supported Languages</h2>
+              <div className="grid grid-cols-2 gap-2">
                 {['Python', 'JavaScript', 'TypeScript', 'Java', 'C++', 'Go', 'Rust', 'PHP'].map(lang => (
                   <div key={lang} className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-accent rounded-full"></span>
@@ -51,10 +51,10 @@ export default function Docs() {
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-bg-secondary rounded-xl border border-border p-6">
-              <h2 className="text-2xl font-semibold text-text mb-4">Test Categories</h2>
-              <ul className="space-y-3 text-text-dim">
+          <div className="space-y-4">
+            <div className="bg-surface border border-border rounded-xl p-4">
+              <h2 className="text-xl font-semibold text-text mb-3">Test Categories</h2>
+              <ul className="space-y-2 text-text-dim text-sm">
                 <li className="flex items-start gap-3">
                   <span className="text-green-500">✓</span>
                   <div>
@@ -82,9 +82,9 @@ export default function Docs() {
               </ul>
             </div>
 
-            <div className="bg-bg-secondary rounded-xl border border-border p-6">
-              <h2 className="text-2xl font-semibold text-text mb-4">Features</h2>
-              <ul className="space-y-3 text-text-dim">
+            <div className="bg-surface border border-border rounded-xl p-4">
+              <h2 className="text-xl font-semibold text-text mb-3">Features</h2>
+              <ul className="space-y-2 text-text-dim text-sm">
                 <li className="flex items-start gap-3">
                   <span className="text-accent">⚡</span>
                   <span>AI-powered test generation</span>
@@ -106,10 +106,10 @@ export default function Docs() {
           </div>
         </div>
 
-        <div className="mt-8 text-center">
+        <div className="mt-6 text-center">
           <button
             onClick={() => navigate('/upload')}
-            className="px-6 py-3 bg-accent text-bg rounded-lg font-semibold hover:bg-[#33eaff] transition-colors"
+            className="px-4 py-2 bg-accent text-bg rounded-lg font-semibold hover:bg-[#33eaff] transition-colors text-sm"
           >
             Try TestGenie Now
           </button>
