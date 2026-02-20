@@ -71,7 +71,7 @@ export default function Hero() {
       {/* Footer */}
       <footer className="border-t border-border py-6 text-center text-[13px] text-text-faint">
         <div className="wrapper">
-          <strong className="text-text-dim">TestGenie</strong> — AI Unit Test Generator &nbsp;·&nbsp; Powered by Claude &nbsp;·&nbsp; 2026
+          <strong className="text-text-dim">TestGenie</strong> — AI Unit Test Generator &nbsp;·&nbsp;
         </div>
       </footer>
 
