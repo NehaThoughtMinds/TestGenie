@@ -15,9 +15,10 @@ export default function Navbar({ showBackButton = false }: NavbarProps) {
   const handleNavClick = (item: string) => {
     const routes: { [key: string]: string } = {
       'Generator': '/',
-      'History': '/history',
+      'Subscription': '/subscription',
+      'Docs': '/docs',
       'Templates': '/templates',
-      'Docs': '/docs'
+      'History': '/history'
     };
     
     navigate(routes[item]);
@@ -26,9 +27,10 @@ export default function Navbar({ showBackButton = false }: NavbarProps) {
   const getActiveItem = () => {
     const pathToItem: { [key: string]: string } = {
       '/': 'Generator',
-      '/history': 'History',
+      '/subscription': 'Subscription',
+      '/docs': 'Docs',
       '/templates': 'Templates',
-      '/docs': 'Docs'
+      '/history': 'History'
     };
     return pathToItem[location.pathname] || 'Generator';
   };
@@ -52,7 +54,7 @@ export default function Navbar({ showBackButton = false }: NavbarProps) {
           </a>
         )}
         <div className="flex gap-1">
-          {['Generator', 'History', 'Templates', 'Docs'].map(item => (
+          {['Generator', 'Subscription', 'Docs', 'Templates', 'History'].map(item => (
             <button 
               key={item} 
               className={`nav-pill ${item === getActiveItem() ? 'active' : ''}`}
