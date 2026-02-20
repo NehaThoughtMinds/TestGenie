@@ -242,7 +242,7 @@ Source code:
         functions_found=[s["name"] for s in symbols if s["type"] == "function"],
         classes_found=[s["name"] for s in symbols if s["type"] == "class"],
         language=payload.language,
-        test_framework=lang_config["test_framework"],
+        test_framework=framework,
     )
 
 
@@ -344,7 +344,7 @@ Source code:
         functions_found=function_names,
         classes_found=[s["name"] for s in symbols if s["type"] == "class"],
         language=payload.language,
-        test_framework=lang_config["test_framework"],
+        test_framework=framework,
     )
 
 
@@ -474,3 +474,27 @@ async def generate_from_jira(payload: JiraGenerateRequest):
         language           = payload.language,
         test_framework     = framework,
     )
+
+
+# ── Framework auto-detection ──────────────────────────────────────────────────
+
+from detector.framework import detect_framework, get_framework_hints
+
+@app.post("/detect/framework")
+async def detect_test_framework(payload: dict):
+    """Detect the test framework used in a project."""
+    import os
+    project_root = payload.get("project_root", "")
+    language     = payload.get("language", "python")
+
+    if not project_root or not os.path.exists(project_root):
+        return {"framework": None, "detected": False}
+
+    framework = detect_framework(project_root, language)
+    hints     = get_framework_hints(framework or "")
+
+    return {
+        "framework": framework,
+        "hints"    : hints,
+        "detected" : framework is not None,
+    }
