@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface NavbarProps {
   showBackButton?: boolean;
@@ -6,9 +6,31 @@ interface NavbarProps {
 
 export default function Navbar({ showBackButton = false }: NavbarProps) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleBack = () => {
     navigate('/');
+  };
+
+  const handleNavClick = (item: string) => {
+    const routes: { [key: string]: string } = {
+      'Generator': '/',
+      'History': '/history',
+      'Templates': '/templates',
+      'Docs': '/docs'
+    };
+    
+    navigate(routes[item]);
+  };
+
+  const getActiveItem = () => {
+    const pathToItem: { [key: string]: string } = {
+      '/': 'Generator',
+      '/history': 'History',
+      '/templates': 'Templates',
+      '/docs': 'Docs'
+    };
+    return pathToItem[location.pathname] || 'Generator';
   };
 
   return (
@@ -31,7 +53,13 @@ export default function Navbar({ showBackButton = false }: NavbarProps) {
         )}
         <div className="flex gap-1">
           {['Generator', 'History', 'Templates', 'Docs'].map(item => (
-            <button key={item} className={`nav-pill ${item === 'Generator' ? 'active' : ''}`}>{item}</button>
+            <button 
+              key={item} 
+              className={`nav-pill ${item === getActiveItem() ? 'active' : ''}`}
+              onClick={() => handleNavClick(item)}
+            >
+              {item}
+            </button>
           ))}
         </div>
       </div>

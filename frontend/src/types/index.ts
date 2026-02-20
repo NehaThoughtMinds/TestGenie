@@ -11,6 +11,21 @@ export interface TestCase {
   tags: string[];
 }
 
+export interface FileCoverage {
+  file: string;
+  line_coverage_pct: number;
+  branch_coverage_pct?: number;
+  lines_covered: number;
+  lines_total: number;
+  missing_lines: number[];
+}
+
+export interface CoverageReport {
+  overall_line_coverage_pct?: number;
+  overall_branch_coverage_pct?: number;
+  files: FileCoverage[];
+}
+
 export interface GenerateTestResponse {
   success: boolean;
   file_name?: string;
@@ -20,6 +35,7 @@ export interface GenerateTestResponse {
   recommended_tool: string;
   total_tests: number;
   test_cases: TestCase[];
+  coverage_report?: CoverageReport;
   generation_time_ms: number;
   model_used: string;
 }

@@ -298,6 +298,11 @@ export default function Upload() {
               </div>
               <div className="flex gap-2.5 flex-wrap">
                 <div className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[rgba(0,229,255,0.1)] text-accent border border-[rgba(0,229,255,0.2)] flex items-center gap-1.5">⚡ {stats.total} Tests</div>
+                {apiResponse.coverage_report?.overall_line_coverage_pct && (
+                  <div className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[rgba(16,185,129,0.1)] text-accent3 border border-[rgba(16,185,129,0.2)] flex items-center gap-1.5">
+                    📊 {apiResponse.coverage_report.overall_line_coverage_pct.toFixed(1)}% Coverage
+                  </div>
+                )}
                 {stats.happy > 0 && <div className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[rgba(16,185,129,0.1)] text-accent3 border border-[rgba(16,185,129,0.2)] flex items-center gap-1.5">✓ {stats.happy} Happy Path</div>}
                 {stats.edge > 0 && <div className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[rgba(245,158,11,0.1)] text-warn border border-[rgba(245,158,11,0.2)] flex items-center gap-1.5">⚠ {stats.edge} Edge Cases</div>}
                 {stats.neg > 0 && <div className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[rgba(124,58,237,0.1)] text-[#a78bfa] border border-[rgba(124,58,237,0.2)] flex items-center gap-1.5">✦ {stats.neg} Negative</div>}
@@ -325,7 +330,7 @@ export default function Upload() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-semibold text-text-dim uppercase tracking-wider">Tool:</span>
-                  <span className="px-2 py-1 rounded bg-[rgba(245,158,11,0.1)] text-warn text-[11px] font-mono font-semibold">{apiResponse.recommended_tool}</span>
+                  <span className="text-[11px] font-mono text-text-dim">{apiResponse.recommended_tool}</span>
                 </div>
                 <div className="flex items-center gap-2 ml-auto">
                   <span className="text-[10px] font-semibold text-text-dim uppercase tracking-wider">Time:</span>
@@ -333,6 +338,67 @@ export default function Upload() {
                 </div>
               </div>
             </div>
+
+            {/* Coverage Report */}
+            {apiResponse.coverage_report && (
+              <div className="bg-surface border border-border rounded-2xl p-5 px-7 mb-6">
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <span className="text-accent">📊</span> Coverage Report
+                </h3>
+                
+                {apiResponse.coverage_report.overall_line_coverage_pct ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="bg-surface2 border border-border rounded-lg p-4">
+                      <div className="text-[11px] font-semibold text-text-dim uppercase tracking-wider mb-1">Line Coverage</div>
+                      <div className="text-2xl font-bold text-accent">{apiResponse.coverage_report.overall_line_coverage_pct.toFixed(1)}%</div>
+                    </div>
+                    {apiResponse.coverage_report.overall_branch_coverage_pct && (
+                      <div className="bg-surface2 border border-border rounded-lg p-4">
+                        <div className="text-[11px] font-semibold text-text-dim uppercase tracking-wider mb-1">Branch Coverage</div>
+                        <div className="text-2xl font-bold text-accent">{apiResponse.coverage_report.overall_branch_coverage_pct.toFixed(1)}%</div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-[rgba(245,158,11,0.1)] border border-[rgba(245,158,11,0.2)] rounded-lg p-4 mb-4">
+                    <div className="text-sm text-warn">
+                      <span className="font-semibold">⚠️ Coverage Analysis Not Available</span>
+                      <p className="text-text-dim mt-2">
+                        Coverage analysis is currently only available for Python files. For other languages, you can run the recommended coverage tool manually.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {apiResponse.coverage_report.files.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-text-dim uppercase tracking-wider mb-3">File Breakdown</h4>
+                    <div className="space-y-2">
+                      {apiResponse.coverage_report.files.map((file, index) => (
+                        <div key={index} className="bg-surface2 border border-border rounded-lg p-3 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono text-[12px] text-text">{file.file}</span>
+                            <div className="flex gap-2">
+                              <span className="text-xs px-2 py-1 bg-[rgba(0,229,255,0.1)] text-accent rounded">
+                                {file.lines_covered}/{file.lines_total} lines
+                              </span>
+                              {file.branch_coverage_pct && (
+                                <span className="text-xs px-2 py-1 bg-[rgba(16,185,129,0.1)] text-accent3 rounded">
+                                  {file.branch_coverage_pct.toFixed(1)}% branches
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-lg font-bold text-accent">
+                            {file.line_coverage_pct.toFixed(1)}%
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Test Cases List */}
             <div className="flex flex-col gap-4">
@@ -346,7 +412,7 @@ export default function Upload() {
                       className="p-[18px] px-6 flex items-center gap-4 cursor-pointer hover:bg-[rgba(255,255,255,0.02)] select-none"
                       onClick={() => toggleCard(tc.id)}
                     >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono text-[11px] font-semibold border ${typeStyle}`}>
+                      <div className={`w-15 h-15 rounded-md flex items-center justify-center font-mono text-[11px] font-semibold ${typeStyle}`}>
                         {tc.id}
                       </div>
                       <div className="flex-1">
