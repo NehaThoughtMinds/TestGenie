@@ -37,7 +37,7 @@ AI_LANGUAGES = {}
 
 if Language is not None and tspython is not None:
     AI_LANGUAGES["python"] = {
-        "language": Language(tspython.language()),
+        "language": Language(tspython.language(), "python"),
         "test_framework": "pytest",
         "framework_hints": "Prefix all test functions with test_. Use pytest.raises() for exceptions.",
         "test_file_suffix": "_test",
@@ -46,7 +46,7 @@ if Language is not None and tspython is not None:
 
 if Language is not None and tsjavascript is not None:
     AI_LANGUAGES["javascript"] = {
-        "language": Language(tsjavascript.language()),
+        "language": Language(tsjavascript.language(), "javascript"),
         "test_framework": "Jest",
         "framework_hints": "Use describe() and it() blocks. Use expect() matchers.",
         "test_file_suffix": "",
@@ -55,7 +55,7 @@ if Language is not None and tsjavascript is not None:
 
 if Language is not None and tsjava is not None:
     AI_LANGUAGES["java"] = {
-        "language": Language(tsjava.language()),
+        "language": Language(tsjava.language(), "java"),
         "test_framework": "JUnit 5",
         "framework_hints": "Use @Test annotation. Use Assertions.assertEquals() and assertThrows().",
         "test_file_suffix": "Test",
