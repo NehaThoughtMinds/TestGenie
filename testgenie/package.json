@@ -16,6 +16,10 @@
       {
         "command": "testgenie.generate",
         "title": "TestGenie: Generate Unit Tests for This File"
+      },
+      {
+        "command": "testgenie.generateFromJira",
+        "title": "TestGenie: Generate from Jira Story"
       }
     ],
     "configuration": {
@@ -45,6 +49,21 @@
           "type": "string",
           "default": "http://127.0.0.1:8000",
           "description": "TestGenie backend URL"
+        },
+        "testgenie.jiraUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Your Jira Cloud URL e.g. https://your-domain.atlassian.net"
+        },
+        "testgenie.jiraEmail": {
+          "type": "string",
+          "default": "",
+          "description": "Your Jira account email"
+        },
+        "testgenie.jiraToken": {
+          "type": "string",
+          "default": "",
+          "description": "Your Jira API token from id.atlassian.com/manage-profile/security/api-tokens"
         }
       }
     }

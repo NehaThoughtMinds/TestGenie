@@ -346,3 +346,131 @@ Source code:
         language=payload.language,
         test_framework=lang_config["test_framework"],
     )
+
+
+# ── Jira TDD endpoint ─────────────────────────────────────────────────────────
+
+from jira.client import JiraClient
+from jira.parser import extract_requirements, format_requirements_for_prompt
+from tdd.generator import generate_tests_from_requirements, generate_code_from_tests
+
+FRAMEWORK_MAP = {
+    "python"          : "pytest",
+    "javascript"      : "Jest",
+    "javascriptreact" : "Jest + React Testing Library",
+    "java"            : "JUnit 5",
+}
+
+class JiraGenerateRequest(BaseModel):
+    story_id    : str
+    language    : str = "python"
+    api_key     : Optional[str] = None
+    jira_url    : str
+    jira_email  : str
+    jira_token  : str
+
+class JiraGenerateResponse(BaseModel):
+    story_id          : str
+    story_title       : str
+    requirements      : List[str]
+    test_filename     : str
+    test_code         : str
+    production_filename: str
+    production_code   : str
+    language          : str
+    test_framework    : str
+
+@app.post("/generate/jira", response_model=JiraGenerateResponse)
+async def generate_from_jira(payload: JiraGenerateRequest):
+
+    # 1. Validate language
+    if payload.language not in AI_LANGUAGES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported language '{payload.language}'. Supported: {list(AI_LANGUAGES.keys())}"
+        )
+
+    # 2. Fetch Jira story
+    try:
+        jira   = JiraClient(payload.jira_url, payload.jira_email, payload.jira_token)
+        story  = jira.get_story(payload.story_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # 3. Extract requirements
+    requirements = extract_requirements(story)
+    if not requirements:
+        raise HTTPException(
+            status_code=400,
+            detail="No requirements found in the Jira story. Please add a description or acceptance criteria."
+        )
+
+    # 4. Get API key
+    api_key = payload.api_key or os.getenv("OPENAI_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=400, detail="OpenAI API key not provided.")
+
+    framework = FRAMEWORK_MAP.get(payload.language, "pytest")
+    lang_config = AI_LANGUAGES[payload.language]
+
+    # 5. Generate tests from requirements
+    try:
+        test_code = generate_tests_from_requirements(
+            requirements=requirements,
+            language=payload.language,
+            framework=framework,
+            api_key=api_key,
+            story_id=story["id"],
+            story_title=story["title"],
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Test generation error: {e}")
+
+    # 6. Generate production code from tests
+    try:
+        production_code = generate_code_from_tests(
+            test_code=test_code,
+            language=payload.language,
+            api_key=api_key,
+            story_id=story["id"],
+            story_title=story["title"],
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Code generation error: {e}")
+
+    # 7. Derive filenames
+    slug = story["id"].lower().replace("-", "_")
+    suffix = lang_config["test_file_suffix"]
+    ext    = lang_config["test_file_extension"]
+    source_ext = {
+        "python": ".py",
+        "javascript": ".js",
+        "javascriptreact": ".jsx",
+        "java": ".java"
+    }.get(payload.language, ".py")
+
+    test_filename       = f"{slug}{suffix}{ext}"
+    production_filename = f"{slug}{source_ext}"
+
+    # 8. Add comment to Jira story
+    try:
+        jira.add_comment(
+            payload.story_id,
+            f"✅ TestGenie generated {len(requirements)} test cases and production code.\n"
+            f"Language: {payload.language} | Framework: {framework}\n"
+            f"Files: {production_filename}, {test_filename}"
+        )
+    except Exception:
+        pass  # Non-fatal
+
+    return JiraGenerateResponse(
+        story_id           = story["id"],
+        story_title        = story["title"],
+        requirements       = requirements,
+        test_filename      = test_filename,
+        test_code          = test_code,
+        production_filename= production_filename,
+        production_code    = production_code,
+        language           = payload.language,
+        test_framework     = framework,
+    )
