@@ -40,7 +40,7 @@ export class ApiService {
     formData.append('file', file);
     formData.append('coverage_depth', coverageDepth);
 
-    const response = await fetch(`${API_BASE_URL}/tests/generate/upload`, {
+    const response = await fetch(`${API_BASE_URL}/tests/generate/upload?include_coverage=true`, {
       method: 'POST',
       body: formData,
     });
