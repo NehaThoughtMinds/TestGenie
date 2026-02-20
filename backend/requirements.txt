@@ -1,7 +1,7 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
 python-multipart==0.0.9
-pydantic==2.8.2
+pydantic==2.6.1
 pydantic-settings==2.4.0
 openai==1.45.0
 python-dotenv==1.0.1
@@ -11,4 +11,3 @@ aiofiles==24.1.0
 json-repair==0.3.0
 tree-sitter==0.21.3
 tree-sitter-python==0.21.0
-pydantic-core==2.20.1
