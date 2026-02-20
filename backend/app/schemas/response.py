@@ -32,21 +32,17 @@ class TestCase(BaseModel):
     @classmethod
     def coerce_to_str(cls, v: Any) -> str:
         if isinstance(v, list):
-            return ", ".join(str(i) for i in v)  # [5, 3] → "5, 3"
-        return str(v)                             # 1 → "1", 8 → "8"
+            return ", ".join(str(i) for i in v)
+        return str(v)
 
     @field_validator("category", mode="before")
     @classmethod
     def fix_category(cls, v: Any) -> str:
         if v is None:
             return "happy_path"
-
         raw = str(v).strip().lower()
-        # Pass through valid enum values unchanged
         if raw in {c.value for c in TestCategory}:
             return raw
-
-        # Common synonyms / model variations
         mapping = {
             "happy": "happy_path",
             "positive": "happy_path",
@@ -75,6 +71,33 @@ class TestCase(BaseModel):
         return str(v).lower() if v else "medium"
 
 
+# ── Coverage Models ────────────────────────────────────────────────
+
+class FileCoverage(BaseModel):
+    """Per-file coverage breakdown."""
+    file: str
+    line_coverage_pct: float
+    branch_coverage_pct: Optional[float] = None
+    lines_covered: int
+    lines_total: int
+    missing_lines: List[int] = []
+
+
+class CoverageReport(BaseModel):
+    """
+    Coverage report returned alongside test cases.
+    - For Python: populated with real numbers from coverage.py
+    - For all other languages: execution_possible=False,
+      commands and config_files are ready-to-paste instructions.
+    """
+    # Real numbers (Python only)
+    overall_line_coverage_pct: Optional[float] = None
+    overall_branch_coverage_pct: Optional[float] = None
+    files: List[FileCoverage] = []
+
+
+# ── Main Response ──────────────────────────────────────────────────
+
 class GenerateTestResponse(BaseModel):
     success: bool
     file_name: Optional[str]
@@ -84,6 +107,7 @@ class GenerateTestResponse(BaseModel):
     recommended_tool: str
     total_tests: int
     test_cases: List[TestCase]
+    coverage_report: Optional[CoverageReport] = None
     generation_time_ms: int
     model_used: str
 

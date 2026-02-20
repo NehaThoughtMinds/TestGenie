@@ -8,14 +8,13 @@ from app.schemas.response import GenerateTestResponse, TestCase
 
 client = OpenAI(api_key=settings.OPEN_API_KEY)
 
-# Language to framework and tool mapping
 LANGUAGE_TOOL_MAP = {
-    "python": {"framework": "pytest", "tool": "coverage.py"},
-    "java": {"framework": "junit", "tool": "jacoco"},
-    "javascript": {"framework": "jest", "tool": "istanbul"},
-    "typescript": {"framework": "jest", "tool": "istanbul"},
-    "csharp": {"framework": "nunit", "tool": "opencover"},
-    "go": {"framework": "testing", "tool": "gocov"},
+    "python":     {"framework": "pytest",   "tool": "coverage.py"},
+    "java":       {"framework": "junit",    "tool": "jacoco"},
+    "javascript": {"framework": "jest",     "tool": "istanbul"},
+    "typescript": {"framework": "jest",     "tool": "istanbul"},
+    "csharp":     {"framework": "nunit",    "tool": "opencover"},
+    "go":         {"framework": "testing",  "tool": "gocov"},
 }
 
 SYSTEM_PROMPT = """You are an expert software testing engineer.
@@ -40,8 +39,10 @@ IMPORTANT RULES:
 - For Python: use pytest syntax with assertions
 - For Java: use JUnit syntax with assertions
 - For JavaScript/TypeScript: use Jest syntax with expects
+- For C#: use NUnit syntax with assertions
+- For Go: use testing package syntax
 
-CRITICAL JSON FORMATTING RULES (strictly follow these):
+CRITICAL JSON FORMATTING RULES:
 - Return ONLY a valid JSON object — no markdown, no explanation, no code fences
 - All strings must use double quotes only — never single quotes
 - Inside string values (especially test_code), escape double quotes as \"
@@ -50,6 +51,10 @@ CRITICAL JSON FORMATTING RULES (strictly follow these):
 - No trailing commas anywhere
 - No comments inside JSON"""
 
+
+# ──────────────────────────────────────────────────────────────────
+# LANGUAGE DETECTION
+# ──────────────────────────────────────────────────────────────────
 
 def detect_language(source_code: str, filename: str = "") -> str:
     """Detect language from file extension first, then code patterns."""
@@ -92,12 +97,12 @@ def detect_language(source_code: str, filename: str = "") -> str:
     return "python"
 
 
+# ──────────────────────────────────────────────────────────────────
+# JSON PARSING HELPERS
+# ──────────────────────────────────────────────────────────────────
+
 def _extract_json(text: str) -> str:
-    """
-    Clean model output to get parsable JSON.
-    - Strip markdown code fences
-    - Extract outermost JSON object {} or array []
-    """
+    """Strip markdown fences and extract outermost JSON object or array."""
     t = text.strip()
 
     # Strip markdown fences
@@ -109,13 +114,13 @@ def _extract_json(text: str) -> str:
             lines = lines[:-1]
         t = "\n".join(lines).strip()
 
-    # Try to find a JSON object first (preferred, since we now ask for {"test_cases": [...]})
+    # Prefer JSON object {}
     obj_start = t.find("{")
     obj_end = t.rfind("}")
     if obj_start != -1 and obj_end != -1 and obj_end > obj_start:
         return t[obj_start: obj_end + 1].strip()
 
-    # Fallback: try to find a JSON array
+    # Fallback: JSON array []
     arr_start = t.find("[")
     arr_end = t.rfind("]")
     if arr_start != -1 and arr_end != -1 and arr_end > arr_start:
@@ -126,10 +131,10 @@ def _extract_json(text: str) -> str:
 
 def _parse_json_safe(raw: str) -> list:
     """
-    Parse JSON with multiple fallback layers:
-    1. Direct json.loads
-    2. json_repair fallback
-    Raises ValueError if all attempts fail.
+    Parse model output into a list of test case dicts.
+    Layer 1: strict json.loads
+    Layer 2: json_repair fallback
+    Handles both {"test_cases": [...]} and bare [...] responses.
     """
     cleaned = _extract_json(raw)
 
@@ -137,27 +142,28 @@ def _parse_json_safe(raw: str) -> list:
     try:
         parsed = json.loads(cleaned)
     except json.JSONDecodeError as first_error:
-        # Layer 2: attempt repair
+        # Layer 2: repair and retry
         try:
-            repaired = repair_json(cleaned)
-            parsed = json.loads(repaired)
+            parsed = json.loads(repair_json(cleaned))
         except Exception:
             raise ValueError(
                 f"AI returned invalid JSON that could not be repaired: {first_error.msg}\n"
                 f"Raw output (first 500 chars): {raw[:500]}"
             ) from first_error
 
-    # Normalise: we asked for {"test_cases": [...]} but handle bare arrays too
+    # Normalise: unwrap object → list
     if isinstance(parsed, dict):
-        # Look for any key that holds a list
         for key in ("test_cases", "tests", "testCases", "test_cases_list"):
             if key in parsed and isinstance(parsed[key], list):
                 return parsed[key]
-        # If no known key, return the first list value found
+        # Fallback: return first list value found
         for value in parsed.values():
             if isinstance(value, list):
                 return value
-        raise ValueError(f"AI returned a JSON object but no test case array found. Keys: {list(parsed.keys())}")
+        raise ValueError(
+            f"AI returned a JSON object but no test case array was found. "
+            f"Keys present: {list(parsed.keys())}"
+        )
 
     if isinstance(parsed, list):
         return parsed
@@ -166,6 +172,10 @@ def _parse_json_safe(raw: str) -> list:
 
 
 def _infer_category(case: dict) -> str:
+    """
+    Validate or infer the test category from the case content.
+    Falls back to keyword matching if the model returned an invalid value.
+    """
     raw_cat = str(case.get("category", "")).strip().lower()
     allowed = {"happy_path", "edge_case", "negative", "boundary"}
     if raw_cat in allowed:
@@ -210,7 +220,16 @@ def _infer_category(case: dict) -> str:
     return "happy_path"
 
 
-async def generate_test_cases(req: GenerateTestRequest, filename: str = "") -> GenerateTestResponse:
+# ──────────────────────────────────────────────────────────────────
+# MAIN SERVICE FUNCTION
+# ──────────────────────────────────────────────────────────────────
+
+async def generate_test_cases(
+    req: GenerateTestRequest,
+    filename: str = "",
+    include_coverage: bool = True,
+) -> GenerateTestResponse:
+
     start = time.time()
 
     detected_language = detect_language(req.source_code, filename)
@@ -220,11 +239,11 @@ async def generate_test_cases(req: GenerateTestRequest, filename: str = "") -> G
 Analyze the source code below and generate {req.max_tests} diverse test cases.
 
 Use the correct framework for the detected language:
-- Python   → pytest
-- Java     → JUnit
+- Python              → pytest
+- Java                → JUnit
 - JavaScript/TypeScript → Jest
-- C#       → NUnit
-- Go       → testing package
+- C#                  → NUnit
+- Go                  → testing package
 
 Coverage Depth: {req.coverage_depth}
 Detected Language: {detected_language}
@@ -259,7 +278,7 @@ Return a JSON object in exactly this format (no markdown, no extra text):
         response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt},
+            {"role": "user",   "content": user_prompt},
         ],
     )
 
@@ -272,6 +291,23 @@ Return a JSON object in exactly this format (no markdown, no extra text):
         if isinstance(c, dict):
             c["category"] = _infer_category(c)
 
+    test_cases = [TestCase(**c) for c in cases_data]
+
+    # ── Step 2: Generate coverage report via LLM ──────────────────
+    coverage_report = None
+    if include_coverage and test_cases:
+        from app.services.coverage_service import get_coverage
+
+        # Pass full dicts so the LLM has all context (name, input, expected, test_code)
+        test_case_dicts = [tc.model_dump() for tc in test_cases]
+
+        coverage_report = await get_coverage(
+            source_code=req.source_code,
+            language=detected_language,
+            test_cases=test_case_dicts,
+            filename=filename or "source_file",
+        )
+
     elapsed = int((time.time() - start) * 1000)
 
     return GenerateTestResponse(
@@ -281,8 +317,9 @@ Return a JSON object in exactly this format (no markdown, no extra text):
         detected_language=detected_language,
         recommended_framework=tool_config["framework"],
         recommended_tool=tool_config["tool"],
-        total_tests=len(cases_data),
-        test_cases=[TestCase(**c) for c in cases_data],
+        total_tests=len(test_cases),
+        test_cases=test_cases,
+        coverage_report=coverage_report,
         generation_time_ms=elapsed,
         model_used=settings.MODEL,
     )
