@@ -38,19 +38,36 @@ class TestCase(BaseModel):
     @field_validator("category", mode="before")
     @classmethod
     def fix_category(cls, v: Any) -> str:
+        if v is None:
+            return "happy_path"
+
+        raw = str(v).strip().lower()
+        # Pass through valid enum values unchanged
+        if raw in {c.value for c in TestCategory}:
+            return raw
+
+        # Common synonyms / model variations
         mapping = {
-            "unit": "happy_path",
-            "integration": "happy_path",
+            "happy": "happy_path",
             "positive": "happy_path",
+            "success": "happy_path",
+            "normal": "happy_path",
+            "edge": "edge_case",
+            "edgecase": "edge_case",
+            "edge_case": "edge_case",
+            "corner": "edge_case",
+            "corner_case": "edge_case",
+            "negative": "negative",
             "error": "negative",
             "exception": "negative",
-            "math": "edge_case",
-            "arithmetic": "edge_case",
-            "string": "edge_case",
+            "failure": "negative",
             "boundary": "boundary",
+            "boundaries": "boundary",
+            "limit": "boundary",
+            "limits": "boundary",
             "boundary_check": "boundary",
         }
-        return mapping.get(str(v).lower(), "happy_path")  # Default to happy_path for unknown categories
+        return mapping.get(raw, "happy_path")
 
     @field_validator("priority", mode="before")
     @classmethod
