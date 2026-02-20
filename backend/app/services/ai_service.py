@@ -1,4 +1,4 @@
-from openai import OpenAI
+import openai
 import json
 import time
 from json_repair import repair_json
@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.schemas.request import GenerateTestRequest
 from app.schemas.response import GenerateTestResponse, TestCase
 
-client = OpenAI(api_key=settings.OPEN_API_KEY)
+client = openai.OpenAI(api_key=settings.OPEN_API_KEY)
 
 LANGUAGE_TOOL_MAP = {
     "python":     {"framework": "pytest",   "tool": "coverage.py"},
@@ -272,19 +272,51 @@ Return a JSON object in exactly this format (no markdown, no extra text):
 }}
 """
 
-    response = client.chat.completions.create(
-        model=settings.MODEL,
-        max_tokens=settings.MAX_TOKENS,
-        response_format={"type": "json_object"},
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user",   "content": user_prompt},
-        ],
-    )
+    try:
+        # Check if API key is available
+        if not settings.OPEN_API_KEY:
+            raise ValueError("OpenAI API key is not configured")
+        
+        print(f"Making OpenAI request with model: {settings.MODEL}")
+        print(f"API key present: {bool(settings.OPEN_API_KEY)}")
+        
+        # Add timeout to prevent hanging
+        import asyncio
+        try:
+            response = await asyncio.wait_for(
+                asyncio.to_thread(
+                    lambda: client.chat.completions.create(
+                        model=settings.MODEL,
+                        max_tokens=settings.MAX_TOKENS,
+                        response_format={"type": "json_object"},
+                        messages=[
+                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "user",   "content": user_prompt},
+                        ],
+                    )
+                ),
+                timeout=60.0  # 60 second timeout
+            )
+        except asyncio.TimeoutError:
+            raise ValueError("OpenAI API request timed out after 60 seconds")
 
-    raw = (response.choices[0].message.content or "").strip()
+        raw = (response.choices[0].message.content or "").strip()
+        print(f"OpenAI response received, length: {len(raw)}")
+        
+        if not raw:
+            raise ValueError("OpenAI returned empty response")
 
-    cases_data = _parse_json_safe(raw)
+    except Exception as e:
+        print(f"OpenAI API error: {str(e)}")
+        raise ValueError(f"Failed to generate test cases: {str(e)}")
+
+    try:
+        cases_data = _parse_json_safe(raw)
+        print(f"Parsed {len(cases_data)} test cases")
+    except Exception as e:
+        print(f"JSON parsing error: {str(e)}")
+        print(f"Raw response: {raw[:500]}...")
+        raise ValueError(f"Failed to parse AI response: {str(e)}")
 
     # Normalise category for every test case
     for c in cases_data:
@@ -296,19 +328,24 @@ Return a JSON object in exactly this format (no markdown, no extra text):
     # ── Step 2: Generate coverage report via LLM ──────────────────
     coverage_report = None
     if include_coverage and test_cases:
-        from app.services.coverage_service import get_coverage
+        try:
+            from app.services.coverage_service import get_coverage
 
-        # Pass full dicts so the LLM has all context (name, input, expected, test_code)
-        test_case_dicts = [tc.model_dump() for tc in test_cases]
+            # Pass full dicts so the LLM has all context (name, input, expected, test_code)
+            test_case_dicts = [tc.model_dump() for tc in test_cases]
 
-        coverage_report = await get_coverage(
-            source_code=req.source_code,
-            language=detected_language,
-            test_cases=test_case_dicts,
-            filename=filename or "source_file",
-        )
+            coverage_report = await get_coverage(
+                source_code=req.source_code,
+                language=detected_language,
+                test_cases=test_case_dicts,
+                filename=filename or "source_file",
+            )
+        except Exception as e:
+            print(f"Coverage generation failed: {str(e)}")
+            # Continue without coverage report
 
     elapsed = int((time.time() - start) * 1000)
+    print(f"Test generation completed in {elapsed}ms")
 
     return GenerateTestResponse(
         success=True,
