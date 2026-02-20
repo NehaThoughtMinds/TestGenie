@@ -11,6 +11,12 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# Root endpoint to avoid 404 error at /
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to my AI-powered API!"}
+
+# CORS middleware setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -18,4 +24,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include the API router with the v1 prefix
 app.include_router(api_router, prefix="/api/v1")
