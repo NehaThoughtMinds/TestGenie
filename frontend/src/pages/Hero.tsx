@@ -1,11 +1,15 @@
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import Navbar from '../components/Navbar';
+import demoVideo from '../assets/AI_Unit_Test_Generator_Video_Demo.mp4';
 
 // Icons
 const IconLightning = () => <span className="text-2xl">⚡</span>;
+const IconClose = () => <span className="text-xl">✕</span>;
 
 export default function Hero() {
   const navigate = useNavigate();
+  const [showVideo, setShowVideo] = useState(false);
 
   return (
     <div className="relative min-h-screen text-text font-sans">
@@ -54,6 +58,7 @@ export default function Hero() {
               Try TestGenie
             </button>
             <button
+              onClick={() => setShowVideo(true)}
               className="px-8 py-4 bg-transparent text-accent border-2 border-accent rounded-xl text-[16px] font-bold cursor-pointer font-sans tracking-[0.3px] transition-all duration-200 hover:bg-accent hover:text-bg hover:-translate-y-[1px] flex items-center gap-2"
             >
               <span className="text-xl">▶</span>
@@ -64,11 +69,51 @@ export default function Hero() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-6 text-center text-[13px] text-text-faint mt-auto">
+      <footer className="border-t border-border py-6 text-center text-[13px] text-text-faint">
         <div className="wrapper">
-          <strong className="text-text-dim">TestGenie</strong> — AI Unit Test Generator &nbsp;·&nbsp; Powered by Claude &nbsp;·&nbsp; ©️ 2026
+          <strong className="text-text-dim">TestGenie</strong> — AI Unit Test Generator &nbsp;·&nbsp; Powered by Claude &nbsp;·&nbsp; 2026
         </div>
       </footer>
+
+      {/* Video Modal */}
+      {showVideo && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fadeUp">
+          <div className="relative w-full max-w-4xl mx-4">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowVideo(false)}
+              className="absolute -top-12 right-0 text-text-dim hover:text-text transition-colors text-xl"
+            >
+              <IconClose />
+            </button>
+            
+            {/* Video Container */}
+            <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl">
+              <div className="relative aspect-video">
+                {/* Placeholder for video - replace with actual video URL */}
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-accent/20 to-accent2/20">
+                  <div className="text-center">
+                    <div className="w-20 h-20 bg-accent rounded-full flex items-center justify-center text-3xl text-bg mb-4 mx-auto">
+                      ▶
+                    </div>
+                    <h3 className="text-xl font-bold text-text mb-2">TestGenie Demo Video</h3>
+                    <p className="text-text-dim">See how TestGenie generates comprehensive unit tests in seconds</p>
+                  </div>
+                </div>
+                
+                {/* When you have a real video, uncomment and use this: */}
+                <video
+                  src={demoVideo}
+                  className="absolute inset-0 w-full h-full"
+                  controls
+                  autoPlay
+                  playsInline
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
