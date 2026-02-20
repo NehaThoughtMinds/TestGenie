@@ -32,14 +32,18 @@ export async function generateTestsCommand(
         ].join(', ');
 
         vscode.window.showInformationMessage(
-          `TestGenie: Found ${symbolSummary}. Generating tests with ${languageConfig.testFramework}…`
+          `TestGenie: Found ${symbolSummary}. Scanning project for usages…`
         );
+
+        progress.report({ message: 'Scanning project for cross-file usages…', increment: 20 });
 
         progress.report({ message: `Calling OpenAI (${languageConfig.testFramework})…`, increment: 30 });
         const generatedCode = await generateTestsFromLLM({
-          fileContent   : editorCtx.fileContent,
-          languageId    : editorCtx.languageId,
-          fileName      : path.basename(editorCtx.filePath),
+          fileContent : editorCtx.fileContent,
+          languageId  : editorCtx.languageId,
+          fileName    : path.basename(editorCtx.filePath),
+          filePath    : editorCtx.filePath,
+          projectRoot : editorCtx.projectRoot,
           symbols,
           testFramework : languageConfig.testFramework,
           frameworkHints: languageConfig.frameworkHints,

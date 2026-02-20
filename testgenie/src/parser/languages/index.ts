@@ -17,10 +17,9 @@ export const LANGUAGE_REGISTRY: Record<string, LanguageConfig> = {
     `,
     testFramework: 'pytest',
     frameworkHints: `
-- Use pytest fixtures for shared setup.
 - Prefix all test functions with test_.
 - Use pytest.raises() for exception testing.
-- Import the module under test using a relative import.
+- Use fixtures for shared setup.
     `.trim(),
     testFileExtension: '.py',
     testFileSuffix: '_test',
@@ -36,12 +35,52 @@ export const LANGUAGE_REGISTRY: Record<string, LanguageConfig> = {
     testFramework: 'Jest',
     frameworkHints: `
 - Use describe() blocks to group related tests.
-- Use it() or test() for individual test cases.
+- Use it() or test() for individual cases.
 - Use expect() with matchers like .toBe(), .toEqual(), .toThrow().
-- Mock dependencies with jest.fn() or jest.mock().
-- Use beforeEach/afterEach for setup and teardown.
     `.trim(),
     testFileExtension: '.test.js',
+    testFileSuffix: '',
+  },
+
+  javascriptreact: {
+    wasmFile: 'tree-sitter-javascript.wasm',
+    symbolQuery: `
+      (function_declaration name: (identifier) @fn_name)
+      (method_definition name: (property_identifier) @fn_name)
+      (class_declaration name: (identifier) @class_name)
+    `,
+    testFramework: 'Jest + React Testing Library',
+    frameworkHints: `
+- Use describe() blocks to group related tests.
+- Use it() or test() for individual cases.
+- Use expect() with matchers like .toBe(), .toEqual(), .toThrow().
+- For React components, use @testing-library/react.
+- Use render() to render components, screen.getByText() to query.
+- Use fireEvent.click() to simulate user interactions.
+- Import { render, screen, fireEvent } from '@testing-library/react'.
+    `.trim(),
+    testFileExtension: '.test.jsx',
+    testFileSuffix: '',
+  },
+
+  typescriptreact: {
+    wasmFile: 'tree-sitter-javascript.wasm',
+    symbolQuery: `
+      (function_declaration name: (identifier) @fn_name)
+      (method_definition name: (property_identifier) @fn_name)
+      (class_declaration name: (identifier) @class_name)
+    `,
+    testFramework: 'Jest + React Testing Library',
+    frameworkHints: `
+- Use describe() blocks to group related tests.
+- Use it() or test() for individual cases.
+- Use expect() with matchers like .toBe(), .toEqual(), .toThrow().
+- For React components, use @testing-library/react.
+- Use render() to render components, screen.getByText() to query.
+- Use fireEvent.click() to simulate user interactions.
+- Import { render, screen, fireEvent } from '@testing-library/react'.
+    `.trim(),
+    testFileExtension: '.test.tsx',
     testFileSuffix: '',
   },
 
@@ -53,11 +92,9 @@ export const LANGUAGE_REGISTRY: Record<string, LanguageConfig> = {
     `,
     testFramework: 'JUnit 5',
     frameworkHints: `
-- Import org.junit.jupiter.api.* for annotations.
 - Annotate test methods with @Test.
 - Use @BeforeEach for setup and @AfterEach for teardown.
-- Use Assertions.assertEquals(), assertThrows(), assertNotNull(), etc.
-- Instantiate the class under test directly or use @ExtendWith(MockitoExtension.class) for mocks.
+- Use Assertions.assertEquals(), assertThrows(), assertNotNull().
     `.trim(),
     testFileExtension: '.java',
     testFileSuffix: 'Test',

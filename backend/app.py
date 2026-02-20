@@ -101,6 +101,21 @@ AI_LANGUAGES = {
         "test_file_suffix": "",
         "test_file_extension": ".test.js",
     },
+    
+    "javascriptreact": {
+        "language": Language(tsjavascript.language()),
+        "test_framework": "Jest + React Testing Library",
+        "framework_hints": "Use describe() and it() blocks. Use render() and screen.getByText() from @testing-library/react. Use fireEvent.click() for interactions.",
+        "test_file_suffix": "",
+        "test_file_extension": ".test.jsx",
+    },
+    "typescriptreact": {
+        "language": Language(tsjavascript.language()),
+        "test_framework": "Jest + React Testing Library",
+        "framework_hints": "Use describe() and it() blocks. Use render() and screen.getByText() from @testing-library/react. Use fireEvent.click() for interactions.",
+        "test_file_suffix": "",
+        "test_file_extension": ".test.tsx",
+    },
     "java": {
         "language": Language(tsjava.language()),
         "test_framework": "JUnit 5",
@@ -225,6 +240,108 @@ Source code:
         filename=test_filename,
         content=generated,
         functions_found=[s["name"] for s in symbols if s["type"] == "function"],
+        classes_found=[s["name"] for s in symbols if s["type"] == "class"],
+        language=payload.language,
+        test_framework=lang_config["test_framework"],
+    )
+
+
+# ── Cross-file analysis endpoint ──────────────────────────────────────────────
+
+from analyzer.import_resolver import find_usages, format_usage_context
+
+class AIGenerateWithContextRequest(BaseModel):
+    source: str
+    language: str = "python"
+    filename: Optional[str] = "source"
+    file_path: Optional[str] = None
+    project_root: Optional[str] = None
+    api_key: Optional[str] = None
+
+@app.post("/generate/ai/full", response_model=AIGenerateResponse)
+async def generate_ai_full(payload: AIGenerateWithContextRequest):
+    if payload.language not in AI_LANGUAGES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported language '{payload.language}'. Supported: {list(AI_LANGUAGES.keys())}"
+        )
+
+    lang_config = AI_LANGUAGES[payload.language]
+
+    # Extract symbols via Tree-sitter
+    try:
+        symbols = extract_symbols_ai(payload.source, payload.language)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to parse source: {e}")
+
+    function_names = [s["name"] for s in symbols if s["type"] == "function"]
+
+    # Cross-file usage analysis
+    usage_context = ""
+    if payload.file_path and payload.project_root and function_names:
+        try:
+            usages = find_usages(
+                source_file_path=payload.file_path,
+                project_root=payload.project_root,
+                language=payload.language,
+                function_names=function_names,
+            )
+            usage_context = format_usage_context(usages)
+        except Exception:
+            pass  # Non-fatal — proceed without cross-file context
+
+    # Get API key
+    api_key = payload.api_key or os.getenv("OPENAI_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=400, detail="OpenAI API key not provided.")
+
+    # Build prompt with cross-file context
+    functions = "\n".join(f"  - {s['name']}" for s in symbols if s["type"] == "function")
+    classes   = "\n".join(f"  - {s['name']}" for s in symbols if s["type"] == "class")
+    symbol_section = ""
+    if functions:
+        symbol_section += f"Functions to test:\n{functions}\n"
+    if classes:
+        symbol_section += f"Classes to test:\n{classes}\n"
+    if not symbol_section:
+        symbol_section = "(infer from source code)"
+
+    prompt = f"""Generate a complete {lang_config['test_framework']} test file for the following {payload.language} code.
+
+{symbol_section}
+
+{usage_context}
+
+Instructions: {lang_config['framework_hints']}
+Include all imports. Output ONLY raw code, no markdown fences.
+
+Source code:
+{payload.source}"""
+
+    try:
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            temperature=0.2,
+            max_tokens=4096,
+            messages=[
+                {"role": "system", "content": "You write clean, correct unit tests. Never use markdown fences."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        generated = response.choices[0].message.content or ""
+        generated = generated.replace("```python", "").replace("```javascript", "").replace("```java", "").replace("```", "").strip()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OpenAI error: {e}")
+
+    suffix = lang_config["test_file_suffix"]
+    ext    = lang_config["test_file_extension"]
+    test_filename = f"{payload.filename}{suffix}{ext}"
+
+    return AIGenerateResponse(
+        filename=test_filename,
+        content=generated,
+        functions_found=function_names,
         classes_found=[s["name"] for s in symbols if s["type"] == "class"],
         language=payload.language,
         test_framework=lang_config["test_framework"],

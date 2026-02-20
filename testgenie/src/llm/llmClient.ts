@@ -5,6 +5,8 @@ export interface LLMRequest {
   fileContent: string;
   languageId: string;
   fileName: string;
+  filePath: string;
+  projectRoot: string;
   symbols: ParsedSymbol[];
   testFramework: string;
   frameworkHints: string;
@@ -38,13 +40,15 @@ export async function generateTestsFromLLM(req: LLMRequest): Promise<string> {
     config.get<string>('backendUrl') || 'http://127.0.0.1:8000';
 
   const body = {
-    source  : req.fileContent,
-    language: req.languageId,
-    filename: req.fileName.replace(/\.[^/.]+$/, ''), // strip extension
-    api_key : apiKey,
+    source      : req.fileContent,
+    language    : req.languageId,
+    filename    : req.fileName.replace(/\.[^/.]+$/, ''),
+    file_path   : req.filePath,
+    project_root: req.projectRoot,
+    api_key     : apiKey,
   };
 
-  const response = await fetch(`${backendUrl}/generate/ai`, {
+  const response = await fetch(`${backendUrl}/generate/ai/full`, {
     method : 'POST',
     headers: { 'Content-Type': 'application/json' },
     body   : JSON.stringify(body),
