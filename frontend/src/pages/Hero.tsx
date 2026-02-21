@@ -4,7 +4,6 @@ import Navbar from '../components/Navbar';
 import demoVideo from '../assets/AI_Unit_Test_Generator_Video_Demo.mp4';
 
 // Icons
-const IconLightning = () => <span className="text-2xl">⚡</span>;
 const IconClose = () => <span className="text-xl">✕</span>;
 
 export default function Hero() {
@@ -37,7 +36,7 @@ export default function Hero() {
           <div className="flex justify-center gap-8 mt-8 animate-fadeUp [animation-delay:0.3s]">
             {[
               { num: '98%', label: 'Coverage Rate' },
-              { num: '<3s', label: 'Generation Time' },
+              { num: '<10s', label: 'Generation Time' },
               { num: '12+', label: 'Languages' },
               { num: '500K+', label: 'Tests Generated' }
             ].map((stat, i) => (
@@ -54,7 +53,6 @@ export default function Hero() {
               onClick={() => navigate('/upload')}
               className="px-8 py-4 bg-accent text-bg border-none rounded-xl text-[16px] font-bold cursor-pointer font-sans tracking-[0.3px] transition-all duration-200 hover:bg-[#33eaff] hover:-translate-y-[1px] shadow-lg hover:shadow-xl flex items-center gap-2"
             >
-              <IconLightning />
               Try TestGenie
             </button>
             <button

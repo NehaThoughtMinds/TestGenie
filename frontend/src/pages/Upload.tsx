@@ -11,7 +11,6 @@ const IconUpload = () => <span className="text-6xl mb-4 block filter grayscale-[
 const IconFile = () => <span className="text-4xl">📄</span>;
 const IconClear = () => <span className="text-2xl">⊘</span>;
 const IconRemove = () => <span>✕</span>;
-const IconLightning = () => <span className="text-2xl">⚡</span>;
 
 export default function Upload() {
   const [coverageDepth, setCoverageDepth] = React.useState<'minimal' | 'standard' | 'deep' | 'security'>('standard');
@@ -36,13 +35,14 @@ export default function Upload() {
   // API hook
   const { generateFromText, generateFromFile, isProcessing, apiResponse, error } = useApi();
 
-  // Stats for summary
+  // Stats for summary - limit to maxTests
+  const displayedCases = generatedCases.slice(0, maxTests);
   const stats: TestStats = {
-    total: generatedCases.length,
-    happy: generatedCases.filter(c => c.category === 'happy_path').length,
-    edge: generatedCases.filter(c => c.category === 'edge_case').length,
-    neg: generatedCases.filter(c => c.category === 'negative').length,
-    boundary: generatedCases.filter(c => c.category === 'boundary').length,
+    total: displayedCases.length,
+    happy: displayedCases.filter(c => c.category === 'happy_path').length,
+    edge: displayedCases.filter(c => c.category === 'edge_case').length,
+    neg: displayedCases.filter(c => c.category === 'negative').length,
+    boundary: displayedCases.filter(c => c.category === 'boundary').length,
   };
 
   // Generation handler
@@ -67,7 +67,8 @@ export default function Upload() {
     if (response && response.success) {
       setGeneratedCases(response.test_cases);
       setShowResults(true);
-      triggerToast(`✓ ${response.total_tests} test cases generated successfully`);
+      const actualCount = Math.min(response.test_cases.length, maxTests);
+      triggerToast(`✓ ${actualCount} test cases generated successfully`);
       scrollToResults();
     } else {
       triggerToast(`❌ Error: ${error || 'Failed to generate tests'}`);
@@ -75,7 +76,7 @@ export default function Upload() {
   };
 
   const copyAll = async () => {
-    const allCode = generatedCases.map(c => c.test_code).join('\n\n');
+    const allCode = displayedCases.map(c => c.test_code).join('\n\n');
     const success = await copyToClipboard(allCode);
     if (success) {
       triggerToast('✓ All test code copied to clipboard');
@@ -83,7 +84,7 @@ export default function Upload() {
   };
 
   const downloadTests = () => {
-    const allCode = generatedCases.map(c => c.test_code).join('\n\n');
+    const allCode = displayedCases.map(c => c.test_code).join('\n\n');
     
     // Determine file extension based on detected language or uploaded file
     let extension = '.py'; // default
@@ -276,7 +277,7 @@ export default function Upload() {
                   </>
                 ) : (
                   <>
-                    <IconLightning /> Generate Unit Test Cases
+                   Generate Unit Test Cases
                   </>
                 )}
               </button>
@@ -402,7 +403,7 @@ export default function Upload() {
 
             {/* Test Cases List */}
             <div className="flex flex-col gap-4">
-              {generatedCases.map((tc) => {
+              {displayedCases.map((tc) => {
                 const isOpen = expandedCards.has(tc.id);
                 const typeStyle = getCategoryColor(tc.category);
 
