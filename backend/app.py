@@ -72,6 +72,8 @@ async def generate(payload: SourcePayload):
     return result
 
 
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok"}
@@ -211,7 +213,7 @@ async def generate_ai(payload: AIGenerateRequest):
 {symbol_section}
 
 Instructions: {lang_config['framework_hints']}
-Include all imports. Output ONLY raw code, no markdown fences.
+Include all imports. Output ONLY raw code, no markdown fences. CRITICAL: When testing a limit of N, you MUST add exactly N items to reach the limit — never fewer.
 
 Source code:
 {payload.source}"""
@@ -313,7 +315,7 @@ async def generate_ai_full(payload: AIGenerateWithContextRequest):
 {usage_context}
 
 Instructions: {lang_config['framework_hints']}
-Include all imports. Output ONLY raw code, no markdown fences.
+Include all imports. Output ONLY raw code, no markdown fences. CRITICAL: When testing a limit of N, you MUST add exactly N items to reach the limit — never fewer.
 
 Source code:
 {payload.source}"""
@@ -344,7 +346,7 @@ Source code:
         functions_found=function_names,
         classes_found=[s["name"] for s in symbols if s["type"] == "class"],
         language=payload.language,
-        test_framework=framework,
+        test_framework=lang_config["test_framework"],
     )
 
 
@@ -362,12 +364,15 @@ FRAMEWORK_MAP = {
 }
 
 class JiraGenerateRequest(BaseModel):
-    story_id    : str
-    language    : str = "python"
-    api_key     : Optional[str] = None
-    jira_url    : str
-    jira_email  : str
-    jira_token  : str
+    story_id              : str
+    language              : str = "python"
+    api_key               : Optional[str] = None
+    jira_url              : str
+    jira_email            : str
+    jira_token            : str
+    previous_test_code    : Optional[str] = None
+    previous_production_code: Optional[str] = None
+    previous_story_id     : Optional[str] = None
 
 class JiraGenerateResponse(BaseModel):
     story_id          : str
@@ -422,6 +427,9 @@ async def generate_from_jira(payload: JiraGenerateRequest):
             api_key=api_key,
             story_id=story["id"],
             story_title=story["title"],
+            previous_test_code=payload.previous_test_code,
+            previous_production_code=payload.previous_production_code,
+            previous_story_id=payload.previous_story_id,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Test generation error: {e}")
@@ -434,6 +442,8 @@ async def generate_from_jira(payload: JiraGenerateRequest):
             api_key=api_key,
             story_id=story["id"],
             story_title=story["title"],
+            previous_production_code=payload.previous_production_code,
+            previous_story_id=payload.previous_story_id,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Code generation error: {e}")
@@ -498,3 +508,70 @@ async def detect_test_framework(payload: dict):
         "hints"    : hints,
         "detected" : framework is not None,
     }
+
+
+# ── Auto-fix failing tests endpoint ──────────────────────────────────────────
+
+class AutoFixRequest(BaseModel):
+    test_code        : str
+    production_code  : str
+    test_results     : str
+    language         : str = "python"
+    api_key          : Optional[str] = None
+
+class AutoFixResponse(BaseModel):
+    production_code  : str
+    fixed            : bool
+    explanation      : str
+
+@app.post("/fix/tests", response_model=AutoFixResponse)
+async def fix_failing_tests(payload: AutoFixRequest):
+
+    api_key = payload.api_key or os.getenv("OPENAI_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=400, detail="OpenAI API key not provided.")
+
+    prompt = f"""You are a senior software engineer. Some unit tests are failing.
+Your job is to fix the PRODUCTION CODE so all tests pass.
+Do NOT modify the test code.
+
+## Failing Test Results:
+{payload.test_results}
+
+## Current Test Code:
+{payload.test_code}
+
+## Current Production Code:
+{payload.production_code}
+
+## Instructions:
+1. Analyze each failing test carefully
+2. Fix the production code to make all tests pass
+3. Do not remove any existing functionality
+4. Add any missing methods or fix incorrect implementations
+5. Fix any error message mismatches
+6. Output ONLY the fixed production code — no markdown fences, no explanations
+
+Fixed production code:"""
+
+    try:
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            temperature=0.1,
+            max_tokens=4096,
+            messages=[
+                {"role": "system", "content": "You fix production code to make failing tests pass. Never modify test code. Never use markdown fences."},
+                {"role": "user",   "content": prompt}
+            ]
+        )
+        fixed_code = response.choices[0].message.content or ""
+        fixed_code = fixed_code.replace("```python","").replace("```java","").replace("```javascript","").replace("```","").strip()
+
+        return AutoFixResponse(
+            production_code=fixed_code,
+            fixed=True,
+            explanation="Production code updated to fix failing tests."
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OpenAI error: {e}")

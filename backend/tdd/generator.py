@@ -1,5 +1,5 @@
 from openai import OpenAI
-from typing import List
+from typing import List, Optional
 
 def generate_tests_from_requirements(
     requirements: List[str],
@@ -8,55 +8,62 @@ def generate_tests_from_requirements(
     api_key: str,
     story_id: str,
     story_title: str,
+    previous_test_code: Optional[str] = None,
+    previous_production_code: Optional[str] = None,
+    previous_story_id: Optional[str] = None,
 ) -> str:
-    """
-    Takes Jira requirements and generates a complete test file.
-    """
     client = OpenAI(api_key=api_key)
-
     requirements_text = "\n".join(f"- {r}" for r in requirements)
+    module_name = story_id.lower().replace("-", "_")
+
+    continuation_section = ""
+    if previous_production_code or previous_test_code:
+        continuation_section = f"""
+## Context from Previous Ticket ({previous_story_id})
+This story is a continuation. The following code already exists.
+Import and reuse existing classes. Do NOT re-test what is already covered.
+
+### Existing Production Code:
+{previous_production_code or "(not available)"}
+
+### Existing Test Code:
+{previous_test_code or "(not available)"}
+---
+"""
 
     prompt = f"""You are a senior software engineer practicing Test-Driven Development.
 
-A Jira story has been provided with the following details:
-
 Story ID: {story_id}
 Story Title: {story_title}
+Production module name: {module_name}
 
 Requirements / Acceptance Criteria:
 {requirements_text}
+{continuation_section}
+RULES:
+1. Import ONLY from the module named `{module_name}` — never use placeholder names
+2. Every method called in tests must exist in production code
+3. Use consistent class names throughout
+4. Include all necessary imports
+5. Each requirement must have at least one test function
+6. Add a comment above each test referencing the requirement it covers
+7. Include happy path, edge cases, and error cases
+8. Output ONLY raw test code — no markdown fences
 
-Your task:
-1. Analyze each requirement carefully
-2. Generate a complete {framework} test file in {language}
-3. Each requirement must have at least one test function
-4. Name test functions descriptively based on the requirement
-5. Add a comment above each test referencing the requirement it covers
-6. Include happy path, edge cases, and error cases
-7. Include all necessary imports
-8. Do NOT generate production code — only tests
-9. Output ONLY raw test code, no markdown fences
-
-Generate the complete test file now:"""
+Generate the complete {framework} test file now:"""
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         temperature=0.2,
         max_tokens=4096,
         messages=[
-            {
-                "role": "system",
-                "content": "You are an expert TDD engineer. You write precise, requirement-driven tests. Never use markdown fences."
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
+            {"role": "system", "content": "You are an expert TDD engineer. Write precise, runnable tests. Never use markdown fences. Never use placeholder module names like 'your_module'."},
+            {"role": "user",   "content": prompt}
         ]
     )
 
     content = response.choices[0].message.content or ""
-    return content.replace("```python", "").replace("```javascript", "").replace("```java", "").replace("```", "").strip()
+    return content.replace("```python","").replace("```javascript","").replace("```java","").replace("```","").strip()
 
 
 def generate_code_from_tests(
@@ -65,29 +72,36 @@ def generate_code_from_tests(
     api_key: str,
     story_id: str,
     story_title: str,
+    previous_production_code: Optional[str] = None,
+    previous_story_id: Optional[str] = None,
 ) -> str:
-    """
-    Takes generated tests and produces production code that passes them.
-    """
     client = OpenAI(api_key=api_key)
+
+    continuation_section = ""
+    if previous_production_code:
+        continuation_section = f"""
+## Existing Production Code from Previous Ticket ({previous_story_id})
+Extend this — do NOT rewrite it. Add new methods/classes as needed.
+
+{previous_production_code}
+---
+"""
 
     prompt = f"""You are a senior software engineer practicing Test-Driven Development.
 
 Story ID: {story_id}
 Story Title: {story_title}
-
+{continuation_section}
 The following test file has been generated from Jira requirements:
 
 {test_code}
 
-Your task:
-1. Analyze all the test cases carefully
-2. Generate production {language} code that makes ALL these tests pass
-3. Implement only what is needed to pass the tests — nothing more
-4. Include proper error handling matching what the tests expect
-5. Add docstrings to all functions and classes
-6. Output ONLY raw production code, no markdown fences
-7. Do NOT include the test code in your output
+RULES:
+1. Implement EVERY method and class referenced in the tests
+2. Use EXACTLY the same class names as the tests use
+3. Include proper error handling matching what tests expect
+4. Add docstrings to all methods
+5. Output ONLY raw production code — no markdown fences
 
 Generate the production code now:"""
 
@@ -96,16 +110,10 @@ Generate the production code now:"""
         temperature=0.2,
         max_tokens=4096,
         messages=[
-            {
-                "role": "system",
-                "content": "You are an expert software engineer. You write clean, production-quality code. Never use markdown fences."
-            },
-            {
-                "role": "user",
-                "content": prompt
-            }
+            {"role": "system", "content": "You are an expert software engineer. Write clean production code. Never use markdown fences."},
+            {"role": "user",   "content": prompt}
         ]
     )
 
     content = response.choices[0].message.content or ""
-    return content.replace("```python", "").replace("```javascript", "").replace("```java", "").replace("```", "").strip()
+    return content.replace("```python","").replace("```javascript","").replace("```java","").replace("```","").strip()
